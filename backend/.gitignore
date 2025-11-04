@@ -1,0 +1,42 @@
+# Binaries (compiled executables)
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+
+# Output folders
+bin/
+build/
+dist/
+
+# Dependency and cache folders
+vendor/
+*.modcache/
+
+# IDE and editor settings
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs and runtime files
+*.log
+*.out
+
+# Environment / secrets
+.env
+.env.local
+.env.production
+.env.development
+
+# Temporary files
+tmp/
+*.tmp
+
+# AWS / Cloud credentials
+*.pem
+*.key
+*.crt
+*.json
