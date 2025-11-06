@@ -1,4 +1,4 @@
-package main_dev
+package main_lambda
 
 import (
 	"context"

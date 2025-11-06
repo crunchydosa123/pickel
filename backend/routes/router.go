@@ -9,6 +9,9 @@ import (
 func SetupRoutes() *mux.Router {
 	r := mux.NewRouter()
 
+	r.HandleFunc("/auth/signup", handlers.Signup).Methods("POST")
+	r.HandleFunc("/auth/login", handlers.Login).Methods("POST")
+
 	r.HandleFunc("/model/create", handlers.CreateModel).Methods("POST")
 	r.HandleFunc("/model/add", handlers.AddFileToModel).Methods("POST")
 	r.HandleFunc("/model/deploy", handlers.DeployModel).Methods("POST")
