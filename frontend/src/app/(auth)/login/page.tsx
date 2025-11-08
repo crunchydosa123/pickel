@@ -1,18 +1,21 @@
+'use client'
+
 import React from 'react'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardFooter, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { ArrowRight } from 'lucide-react'
 
-type Props = {}
+const Page = () => {
+  const router = useRouter()
 
-const Page = (props: Props) => {
   return (
     <div className="flex justify-center mt-10">
       <Card className="w-300 max-w-md p-6">
         <CardTitle>
-          <div className='text-3xl'>Login</div>
+          <div className="text-3xl">Login</div>
         </CardTitle>
         <CardDescription>Welcome back</CardDescription>
 
@@ -28,8 +31,8 @@ const Page = (props: Props) => {
           </div>
         </CardContent>
 
-        <CardFooter className='px-0'>
-          <Button className="w-full justify-center">
+        <CardFooter className="px-0">
+          <Button className="w-full justify-center" onClick={() => router.push('/dashboard')}>
             Login <ArrowRight className="ml-2" />
           </Button>
         </CardFooter>
