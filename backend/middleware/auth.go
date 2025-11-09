@@ -7,6 +7,10 @@ import (
 	"strings"
 )
 
+type contextKey string
+
+const userContextKey = contextKey("userClaims")
+
 func JWTAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		authHeader := r.Header.Get("Authorization")
@@ -22,8 +26,13 @@ func JWTAuth(next http.Handler) http.Handler {
 			return
 		}
 
-		ctx := r.Context()
-		ctx = context.WithValue(ctx, "user_id", claims.UserID)
+		ctx := context.WithValue(r.Context(), userContextKey, claims)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
+}
+
+func GetUserFromContext(r *http.Request) (*utils.Claims, bool) {
+	claims, ok := r.Context().Value(userContextKey).(*utils.Claims)
+
+	return claims, ok
 }
