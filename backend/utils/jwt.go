@@ -2,6 +2,7 @@ package utils
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"time"
 
@@ -16,6 +17,11 @@ type Claims struct {
 }
 
 func GenerateJWT(userID string) (string, error) {
+	secret := os.Getenv("JWT_SECRET")
+	if secret == "" {
+		return "", errors.New("JWT_SECRET is not set")
+	}
+
 	claims := Claims{
 		UserID: userID,
 		RegisteredClaims: jwt.RegisteredClaims{
@@ -24,8 +30,15 @@ func GenerateJWT(userID string) (string, error) {
 		},
 	}
 
-	token := jwt.NewWithClaims(jwt.SigningMethodES256, claims)
-	return token.SignedString(jwtSecret)
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+	signedToken, err := token.SignedString([]byte(secret))
+	if err != nil {
+		fmt.Println("JWT signing error:", err)
+		return "", err
+	}
+
+	return signedToken, nil
 }
 
 func ValidateJWT(tokenStr string) (*Claims, error) {

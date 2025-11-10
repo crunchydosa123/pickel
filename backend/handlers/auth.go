@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"pickel-backend/utils"
@@ -16,17 +17,39 @@ type AuthRequest struct {
 	Password string `json:"password"`
 }
 
+type SignupRequest struct {
+	Name     string `json:"name"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
 func Signup(w http.ResponseWriter, r *http.Request) {
-	var req AuthRequest
+	var req SignupRequest
 	json.NewDecoder(r.Body).Decode(&req)
 
 	hashed, _ := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	utils.ConnectSupabase()
 	db := utils.GetDB()
 
-	_, err := db.Exec(context.Background(),
-		"INSERT INTO users (email, password_hash) VALUES ($1, $2)",
-		req.Email, string(hashed),
+	var exists bool
+	err := db.QueryRow(context.Background(),
+		"SELECT EXISTS(SELECT 1 FROM users WHERE email=$1)", req.Email,
+	).Scan(&exists)
+
+	if exists {
+		http.Error(w, "Email already registered", http.StatusConflict)
+		return
+	}
+
+	if err != nil {
+		fmt.Println("error", err)
+		http.Error(w, "Database error", http.StatusInternalServerError)
+		return
+	}
+
+	_, err = db.Exec(context.Background(),
+		"INSERT INTO users (name, email, password_hash) VALUES ($1, $2, $3)",
+		req.Name, req.Email, string(hashed),
 	)
 
 	if err != nil {
@@ -42,6 +65,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	var req AuthRequest
 	json.NewDecoder(r.Body).Decode(&req)
 
+	utils.ConnectSupabase()
 	db := utils.GetDB()
 	var storedHash string
 	var id uuid.UUID
