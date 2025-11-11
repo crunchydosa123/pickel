@@ -2,9 +2,9 @@ package middleware
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"pickel-backend/utils"
-	"strings"
 )
 
 type contextKey string
@@ -13,16 +13,21 @@ const userContextKey = contextKey("userClaims")
 
 func JWTAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		authHeader := r.Header.Get("Authorization")
-		if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer ") {
+		cookie, err := r.Cookie("token")
+		var tokenStr string
+		fmt.Println("cookie: ", cookie)
+		if err == nil {
+			tokenStr = cookie.Value
+		}
+
+		if tokenStr == "" {
 			http.Error(w, "Missing or invalid token", http.StatusUnauthorized)
 			return
 		}
 
-		tokenStr := strings.TrimPrefix(authHeader, "Bearer ")
 		claims, err := utils.ValidateJWT(tokenStr)
 		if err != nil {
-			http.Error(w, "Unauthorized: "+err.Error(), http.StatusUnauthorized)
+			http.Error(w, "Unauthorized (Middleware): "+err.Error(), http.StatusUnauthorized)
 			return
 		}
 

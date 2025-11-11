@@ -88,6 +88,16 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	json.NewEncoder(w).Encode(map[string]string{"token": token})
+	http.SetCookie(w, &http.Cookie{
+		Name:     "token",
+		Value:    token,
+		HttpOnly: true, // secure from JS access
+		Path:     "/",
+		Secure:   false, // set true in production (HTTPS)
+		SameSite: http.SameSiteNoneMode,
+	})
 
+	json.NewEncoder(w).Encode(map[string]string{
+		"message": "Login successful",
+	})
 }

@@ -1,14 +1,17 @@
 package main
 
 import (
-	"log"
+	"fmt"
 	"net/http"
-
 	"pickel-backend/routes"
 )
 
 func main() {
-	router := routes.SetupRoutes()
-	log.Println("🚀 Server running on http://localhost:8080")
-	http.ListenAndServe(":8080", router)
+	r := routes.SetupRoutes()
+
+	fmt.Println("✅ Server running on http://localhost:8080")
+	err := http.ListenAndServe(":8080", routes.EnableCORS(r))
+	if err != nil {
+		fmt.Println("Server error:", err)
+	}
 }

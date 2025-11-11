@@ -4,32 +4,34 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"pickel-backend/middleware"
 	"pickel-backend/utils"
 )
 
 type CreateModelRequest struct {
-	Name       string `json:"name"`
-	Created_By string `json:"created_by"`
+	Name string `json:"name"`
 }
 
-// create a new model
 func CreateModel(w http.ResponseWriter, r *http.Request) {
-	claims, ok := middleware.GetUserFromContext(r)
-	if !ok {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+	claims, _ := middleware.GetUserFromContext(r)
+
+	userID := claims.UserID
+
+	var req CreateModelRequest
+
+	bodyBytes, _ := io.ReadAll(r.Body)
+	fmt.Println("Raw body:", string(bodyBytes))
+	if err := json.Unmarshal(bodyBytes, &req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
-	userID := claims.UserID
-	fmt.Fprintf(w, "Model created by user: %s", userID)
-
-	var req CreateModelRequest
 	var db = utils.GetDB()
 	_, err := db.Exec(context.Background(),
-		"INSERT INTO models values ($1, $2)",
-		req.Name, req.Created_By,
+		"INSERT INTO models (name, created_by) values ($1, $2)",
+		req.Name, userID,
 	)
 
 	if err != nil {
