@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/sidebar"
 import { Card } from "./ui/card"
 import { Settings } from "lucide-react"
+import UserCard from "./UserCard"
 
 export function AppSidebar() {
   return (
@@ -47,10 +48,7 @@ export function AppSidebar() {
         <SidebarGroup />
       </SidebarContent>
       <SidebarFooter >
-        <Card className="flex justify-between px-2 py-2 "><div className="flex justify-between">
-          <div>user</div>
-          <Settings />
-        </div></Card>
+        <UserCard />
       </SidebarFooter>
     </Sidebar>
   )

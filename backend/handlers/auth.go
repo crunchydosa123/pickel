@@ -94,7 +94,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		HttpOnly: true, // secure from JS access
 		Path:     "/",
 		Secure:   false, // set true in production (HTTPS)
-		SameSite: http.SameSiteNoneMode,
+		SameSite: http.SameSiteLaxMode,
 	})
 
 	json.NewEncoder(w).Encode(map[string]string{

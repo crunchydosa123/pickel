@@ -3,36 +3,39 @@ import { NextResponse } from "next/server";
 export async function POST(req: Request) {
   try {
     const { email, password } = await req.json();
-    const backendURL = process.env.BACKEND_URL;
+    const backendURL = process.env.BACKEND_URL!;
 
-    const res = await fetch(`${backendURL}/auth/login`, {
+    const backendRes = await fetch(`${backendURL}/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
       credentials: "include",
     });
 
-    const setCookieHeader = res.headers.get("set-cookie"); // <-- extract backend cookie
-    const text = await res.text();
+    const cookie = backendRes.headers.get("set-cookie");
+    const text = await backendRes.text();
     let data: any;
+
     try {
       data = JSON.parse(text);
     } catch {
       data = { message: text };
     }
 
-    const response = NextResponse.json(
-      { message: "Login successful", data },
-      { status: 200 }
-    );
+    if (!backendRes.ok) {
+      return NextResponse.json(data, { status: backendRes.status });
+    }
 
-    if (setCookieHeader) {
-      response.headers.set("Set-Cookie", setCookieHeader); // <-- forward it to browser
+    const response = NextResponse.json(data, { status: 200 });
+
+    if (cookie) {
+      // 🔥 Forward cookie exactly as received from backend
+      response.headers.set("Set-Cookie", cookie);
     }
 
     return response;
-  } catch (error) {
-    console.error("Error connecting to Go Backend:", error);
+  } catch (err) {
+    console.error("Error connecting to backend:", err);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 }

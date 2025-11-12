@@ -68,6 +68,49 @@ func AddFileToModel(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func GetModelByUser(w http.ResponseWriter, r *http.Request) {
+	claims, _ := middleware.GetUserFromContext(r)
+	userId := claims.UserID
+
+	utils.ConnectSupabase()
+	var db = utils.GetDB()
+
+	rows, err := db.Query(context.Background(),
+		"SELECT id, name FROM models WHERE created_by = $1",
+		userId)
+
+	if err != nil {
+		http.Error(w, fmt.Sprintf("error fetching models for user: %v", err), http.StatusInternalServerError)
+	}
+
+	defer rows.Close()
+
+	var models []map[string]interface{}
+
+	for rows.Next() {
+		var id, name string
+		if err := rows.Scan(&id, &name); err != nil {
+			http.Error(w, fmt.Sprintf("error scanning row: %v", err), http.StatusInternalServerError)
+			return
+		}
+		models = append(models, map[string]interface{}{
+			"id":   id,
+			"name": name,
+		})
+	}
+
+	if err = rows.Err(); err != nil {
+		http.Error(w, fmt.Sprintf("error scanning row: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"userId": userId,
+		"models": models,
+	})
+
+}
+
 // allow the model to get requests from public
 func DeployModel(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]string{"message": "Model deployed"})

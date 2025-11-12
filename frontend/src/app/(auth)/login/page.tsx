@@ -27,6 +27,7 @@ const Page = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
+        credentials: 'include'
       })
 
       const data = await res.json()
@@ -35,7 +36,7 @@ const Page = () => {
         toast.error(data?.error || "Invalid credentials")
       } else {
         toast.success("Login successful")
-        localStorage.setItem('token', data.token)
+        //localStorage.setItem('token', data.token)
         router.push('/dashboard')
       }
     } catch (err) {
