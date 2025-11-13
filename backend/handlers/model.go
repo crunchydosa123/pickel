@@ -8,10 +8,18 @@ import (
 	"net/http"
 	"pickel-backend/middleware"
 	"pickel-backend/utils"
+
+	"github.com/google/uuid"
 )
 
 type CreateModelRequest struct {
 	Name string `json:"name"`
+}
+
+type DeployModelRequest struct {
+	FileName string `json:"file_name"`
+	ModelId  string `json:"model_id"`
+	Content  []byte `json:"content"`
 }
 
 func CreateModel(w http.ResponseWriter, r *http.Request) {
@@ -42,30 +50,6 @@ func CreateModel(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(map[string]string{"message": "Model created"})
 
-}
-
-// add a file to a model (h5, pickel)
-func AddFileToModel(w http.ResponseWriter, r *http.Request) {
-	r.ParseMultipartForm(10 << 20)
-
-	file, handler, err := r.FormFile("file")
-	if err != nil {
-		http.Error(w, "Missing file: "+err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	defer file.Close()
-
-	url, err := utils.UploadFileToS3(r.Context(), file, handler.Filename)
-
-	if err != nil {
-		http.Error(w, "S3 upload failed: "+err.Error(), http.StatusInternalServerError)
-	}
-
-	json.NewEncoder(w).Encode(map[string]string{
-		"message": "File uploaded successfully",
-		"url":     url,
-	})
 }
 
 func GetModelByUser(w http.ResponseWriter, r *http.Request) {
@@ -111,9 +95,60 @@ func GetModelByUser(w http.ResponseWriter, r *http.Request) {
 
 }
 
-// allow the model to get requests from public
 func DeployModel(w http.ResponseWriter, r *http.Request) {
-	json.NewEncoder(w).Encode(map[string]string{"message": "Model deployed"})
+	claims, _ := middleware.GetUserFromContext(r)
+	userId := claims.UserID
+
+	err := r.ParseMultipartForm(20 << 20)
+	if err != nil {
+		http.Error(w, "failed to parse form: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	file, header, err := r.FormFile("modelFile")
+	if err != nil {
+		http.Error(w, "file missing: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	defer file.Close()
+
+	s3Key := fmt.Sprintf("%s/%s", userId, header.Filename)
+
+	s3URL, err := utils.UploadFileToS3(r.Context(), file, s3Key)
+	if err != nil {
+		http.Error(w, "S3 upload failed: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	endpoint, err := utils.DeployToLambda(header.Filename, s3Key)
+	if err != nil {
+		http.Error(w, "Lambda deployment failed: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	db := utils.GetDB()
+	modelID := uuid.New().String()
+	_, err = db.Exec(context.Background(),
+		"INSERT INTO models (id, name, created_by, s3_url, api_endpoint) VALUES ($1, $2, $3, $4, $5)",
+		modelID, header.Filename, userId, s3URL, endpoint,
+	)
+
+	if err != nil {
+		http.Error(w, "DB insert failed: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"message":     "Model deployed successfully",
+		"modelId":     modelID,
+		"apiEndpoint": endpoint,
+		"s3URL":       s3URL,
+		"fileName":    header.Filename,
+		"createdBy":   userId,
+	})
+
 }
 
 // get public url

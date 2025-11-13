@@ -3,8 +3,10 @@ package utils
 import (
 	"context"
 	"fmt"
+	"io"
 	"log"
 	"mime/multipart"
+	"os"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -32,6 +34,15 @@ func init() {
 }
 
 func UploadFileToS3(ctx context.Context, file multipart.File, fileName string) (string, error) {
+	bucket := os.Getenv("S3_BUCKET_NAME")
+	if bucket == "" {
+		return "", fmt.Errorf("S3_BUCKET_NAME is not set")
+	}
+
+	if seeker, ok := file.(io.Seeker); ok {
+		seeker.Seek(0, io.SeekStart)
+	}
+
 	_, err := uploader.Upload(ctx, &s3.PutObjectInput{
 		Bucket:      aws.String(bucket),
 		Key:         aws.String(fileName),

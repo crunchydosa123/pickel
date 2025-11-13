@@ -4,11 +4,36 @@ import path from "path";
 
 
 export async function POST(req: Request){
-  const formData = await req.formData();
-  const file = formData.get("file") as File;
+  const backendUrl = process.env.BACKEND_URL
+  const cookieHeader = req.headers.get("cookie") || "";
 
-  if(!file) return NextResponse.json({error: "No file uploaded"}, { status: 400});
-  const res = await fetch('https://localhost:8080/')
-  
-  //proxy to go backend which stores the pickle file in s3
+  try{
+    const formData = await req.formData();
+    const file = formData.get('modelFile') as File;
+
+    if(!file){
+      return NextResponse.json({error: "No file uploaded"}, {status: 400});
+    }
+
+    const body = new FormData();
+    body.append("modelFile", file);
+
+    const res = await fetch(`${backendUrl}/model/deploy`, {
+      method: "POST",
+      headers: {
+        Cookie: cookieHeader,
+      },
+      body, 
+      credentials: "include"
+    });
+    
+    const data = await res.json();
+    return NextResponse.json(data);
+  }catch(err: any){
+    console.error("Error deploying model: ", err);
+    return NextResponse.json(
+    { error: "Failed to deploy model", details: err.message },  
+    { status: 500 }
+    );
+  }
 }
