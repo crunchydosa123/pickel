@@ -19,25 +19,27 @@ import (
 var (
 	s3Client *s3.Client
 	uploader *manager.Uploader
-	bucket   = "pickel-models"
+	bucket   string
 )
 
 func init() {
+	bucket = os.Getenv("S3_BUCKET_NAME")
+	if bucket == "" {
+		log.Fatal("S3_BUCKET_NAME is not set")
+	}
+
 	cfg, err := config.LoadDefaultConfig(context.TODO())
 	if err != nil {
-		log.Fatalf("unable to load AWS SDK config, %v", err)
+		log.Fatalf("unable to load AWS SDK config: %v", err)
 	}
 
 	s3Client = s3.NewFromConfig(cfg)
 	uploader = manager.NewUploader(s3Client)
-	fmt.Println("S3 client initialized")
+
+	fmt.Println("S3 initialized using bucket:", bucket)
 }
 
 func UploadFileToS3(ctx context.Context, file multipart.File, fileName string) (string, error) {
-	bucket := os.Getenv("S3_BUCKET_NAME")
-	if bucket == "" {
-		return "", fmt.Errorf("S3_BUCKET_NAME is not set")
-	}
 
 	if seeker, ok := file.(io.Seeker); ok {
 		seeker.Seek(0, io.SeekStart)
@@ -57,7 +59,6 @@ func UploadFileToS3(ctx context.Context, file multipart.File, fileName string) (
 
 	url := fmt.Sprintf("https://%s.s3.amazonaws.com/%s", bucket, fileName)
 	return url, nil
-
 }
 
 func GeneratePresignedURL(ctx context.Context, key string, duration time.Duration) (string, error) {
@@ -73,5 +74,4 @@ func GeneratePresignedURL(ctx context.Context, key string, duration time.Duratio
 	}
 
 	return req.URL, nil
-
 }

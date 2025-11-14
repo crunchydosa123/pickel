@@ -1,6 +1,8 @@
 import { cookies } from 'next/headers';
 import CreateModelPopover from '@/components/CreateModelPopover';
 import { Card } from '@/components/ui/card';
+import { redirect } from 'next/navigation';
+import Link from 'next/link';
 
 export default async function Page() {
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
@@ -41,6 +43,7 @@ export default async function Page() {
       {models.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {models.map((model: any) => (
+            <Link key={model.id} href={`/model/${model.id}`}>
             <Card
               key={model.id}
               className="bg-white text-gray-800 rounded-lg p-4 transition-shadow"
@@ -48,6 +51,7 @@ export default async function Page() {
               <h2 className="font-semibold text-lg">{model.name}</h2>
               <p className="text-sm text-gray-600 mt-1">{model.id}</p>
             </Card>
+            </Link>
           ))}
         </div>
       ) : (

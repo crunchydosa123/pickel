@@ -8,8 +8,10 @@ import (
 	"net/http"
 	"pickel-backend/middleware"
 	"pickel-backend/utils"
+	"time"
 
 	"github.com/google/uuid"
+	"github.com/gorilla/mux"
 )
 
 type CreateModelRequest struct {
@@ -101,12 +103,14 @@ func DeployModel(w http.ResponseWriter, r *http.Request) {
 
 	err := r.ParseMultipartForm(20 << 20)
 	if err != nil {
+		fmt.Println(err)
 		http.Error(w, "failed to parse form: "+err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	file, header, err := r.FormFile("modelFile")
 	if err != nil {
+		fmt.Println(err)
 		http.Error(w, "file missing: "+err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -117,27 +121,33 @@ func DeployModel(w http.ResponseWriter, r *http.Request) {
 
 	s3URL, err := utils.UploadFileToS3(r.Context(), file, s3Key)
 	if err != nil {
+		fmt.Println(err)
 		http.Error(w, "S3 upload failed: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	endpoint, err := utils.DeployToLambda(header.Filename, s3Key)
 	if err != nil {
+		fmt.Println(err)
 		http.Error(w, "Lambda deployment failed: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	db := utils.GetDB()
+	//db := utils.GetDB()
 	modelID := uuid.New().String()
-	_, err = db.Exec(context.Background(),
-		"INSERT INTO models (id, name, created_by, s3_url, api_endpoint) VALUES ($1, $2, $3, $4, $5)",
+	/*_, err = db.Exec(context.Background(),
+		"INSERT INTO modelCode (s3_url, api_endpoint) VALUES ($1, $2, $3, $4, $5)",
 		modelID, header.Filename, userId, s3URL, endpoint,
-	)
+	)*/
 
-	if err != nil {
+	/*f err != nil {
+		fmt.Println(err)
 		http.Error(w, "DB insert failed: "+err.Error(), http.StatusInternalServerError)
 		return
-	}
+	}*/
+
+	fmt.Println("s3URL", s3URL)
+	fmt.Println("lambda endpoint", endpoint)
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
@@ -149,6 +159,37 @@ func DeployModel(w http.ResponseWriter, r *http.Request) {
 		"createdBy":   userId,
 	})
 
+}
+
+func GetSingleModel(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id := vars["id"]
+
+	db := utils.GetDB()
+
+	type Model struct {
+		ID        string    `json:"id"`
+		Name      string    `json:"name"`
+		UserID    string    `json:"user_id"`
+		CreatedAt time.Time `json:"created_at"`
+	}
+
+	var model Model
+
+	err := db.QueryRow(
+		context.Background(),
+		"SELECT id, name, created_by, created_at FROM models WHERE id = $1",
+		id,
+	).Scan(&model.ID, &model.Name, &model.UserID, &model.CreatedAt)
+
+	if err != nil {
+		fmt.Println(err)
+		http.Error(w, "Model not found: "+err.Error(), http.StatusNotFound)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(model)
 }
 
 // get public url
