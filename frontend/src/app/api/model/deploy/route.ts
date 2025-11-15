@@ -10,6 +10,7 @@ export async function POST(req: Request){
   try{
     const formData = await req.formData();
     const file = formData.get('modelFile') as File;
+    const modelId = formData.get('modelId') as string
 
     if(!file){
       return NextResponse.json({error: "No file uploaded"}, {status: 400});
@@ -17,6 +18,8 @@ export async function POST(req: Request){
 
     const body = new FormData();
     body.append("modelFile", file);
+    body.append("modelId", modelId);
+
 
     const res = await fetch(`${backendUrl}/model/deploy`, {
       method: "POST",

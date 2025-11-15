@@ -42,7 +42,7 @@ console.log("DATA:", data);
       <div className="flex flex-col mt-10">
         <div className="flex justify-between">
           <div>Deployments</div>
-          <AddModelCode />
+          <AddModelCode id={id}/>
         </div>
         
       </div>

@@ -9,7 +9,11 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 
-const AddModelCode = () => {
+type AddModelCodeProps = {
+  id: string;
+};
+
+const AddModelCode = ({ id }: AddModelCodeProps) => {
   const [file, setFile] = useState<File | null>(null);
 
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
@@ -19,6 +23,7 @@ const AddModelCode = () => {
 
     const formData = new FormData();
     formData.append("modelFile", file);
+    formData.append("modelId", id);
 
     const res = await fetch(`${baseUrl}/api/model/deploy`, {
       method: "POST",

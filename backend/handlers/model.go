@@ -10,7 +10,6 @@ import (
 	"pickel-backend/utils"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 )
 
@@ -100,6 +99,7 @@ func GetModelByUser(w http.ResponseWriter, r *http.Request) {
 func DeployModel(w http.ResponseWriter, r *http.Request) {
 	claims, _ := middleware.GetUserFromContext(r)
 	userId := claims.UserID
+	modelID := r.FormValue("modelId")
 
 	err := r.ParseMultipartForm(20 << 20)
 	if err != nil {
@@ -126,34 +126,41 @@ func DeployModel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	endpoint, err := utils.DeployToLambda(header.Filename, s3Key)
+	lambdaArn, err := utils.DeployToLambda(header.Filename, s3Key)
 	if err != nil {
 		fmt.Println(err)
 		http.Error(w, "Lambda deployment failed: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	//db := utils.GetDB()
-	modelID := uuid.New().String()
-	/*_, err = db.Exec(context.Background(),
-		"INSERT INTO modelCode (s3_url, api_endpoint) VALUES ($1, $2, $3, $4, $5)",
-		modelID, header.Filename, userId, s3URL, endpoint,
-	)*/
+	apiURL, err := utils.CreateAPIGatewayForLambda(r.Context(), lambdaArn)
 
-	/*f err != nil {
+	if err != nil {
+		fmt.Println(err)
+		http.Error(w, "API Gateway deployment failed: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	fmt.Println("s3URL", s3URL)
+	fmt.Println("lambda endpoint", apiURL)
+
+	db := utils.GetDB()
+	_, err = db.Exec(context.Background(),
+		"INSERT INTO modelcode (s3URL, model_id, lambda_arn, api_url) VALUES ($1, $2, $3, $4)",
+		s3URL, modelID, lambdaArn, apiURL,
+	)
+
+	if err != nil {
 		fmt.Println(err)
 		http.Error(w, "DB insert failed: "+err.Error(), http.StatusInternalServerError)
 		return
-	}*/
-
-	fmt.Println("s3URL", s3URL)
-	fmt.Println("lambda endpoint", endpoint)
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"message":     "Model deployed successfully",
 		"modelId":     modelID,
-		"apiEndpoint": endpoint,
+		"apiEndpoint": apiURL,
 		"s3URL":       s3URL,
 		"fileName":    header.Filename,
 		"createdBy":   userId,

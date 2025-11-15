@@ -2,7 +2,6 @@ package utils
 
 import (
 	"context"
-	"fmt"
 	"os"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -35,12 +34,13 @@ func DeployToLambda(fileName, s3Key string) (string, error) {
 		MemorySize:   aws.Int32(1024),
 	}
 
-	_, err = client.CreateFunction(context.Background(), input)
+	createdFunction, err := client.CreateFunction(context.Background(), input)
 	if err != nil {
 		return "", err
 	}
 
-	endpoint := fmt.Sprintf("https://%s.lambda-url.amazonaws.com/default/%s", os.Getenv("AWS_REGION"), functionName)
-	return endpoint, nil
+	lambdaArn := aws.ToString(createdFunction.FunctionArn)
+
+	return lambdaArn, nil
 
 }
