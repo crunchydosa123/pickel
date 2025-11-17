@@ -40,8 +40,8 @@ func SetupRoutes() *mux.Router {
 	modelSubrouter.HandleFunc("/", handlers.GetModelByUser).Methods("GET")
 	modelSubrouter.HandleFunc("/{id}", handlers.GetSingleModel).Methods("GET")
 
-	/*githubSubrouter := r.PathPrefix("/github").Subrouter()
-	//githubSubrouter.HandleFunc("/webhook", handlers.TriggerDeploy).Methods("POST")*/
+	githubSubrouter := r.PathPrefix("/github").Subrouter()
+	githubSubrouter.HandleFunc("/webhook", handlers.GithubWebhook).Methods("POST")
 
 	r.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
