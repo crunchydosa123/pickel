@@ -8,6 +8,7 @@ import (
 	"os"
 	"pickel-backend/utils"
 	"strconv"
+	"strings"
 )
 
 type GithubPushPayload struct {
@@ -45,21 +46,19 @@ func GithubWebhook(w http.ResponseWriter, r *http.Request) {
 	}
 
 	appIDStr := os.Getenv("GITHUB_APP_ID")
-	privateKey := []byte(os.Getenv("GITHUB_PRIVATE_KEY"))
+	pemRaw := strings.ReplaceAll(os.Getenv("GITHUB_PRIVATE_KEY"), `\n`, "\n")
 
 	appID, _ := strconv.ParseInt(appIDStr, 10, 64)
 
 	installationID := payload.Installation.ID
 	fmt.Println("installation id:", installationID)
 
-	fmt.Println("installation id:", installationID)
-
-	jwtToken, _ := utils.GenerateGithubJWT(appID, privateKey)
+	jwtToken, _ := utils.GenerateGithubJWT(appID, []byte(pemRaw))
 	installationToken, err := utils.GetInstallationToken(jwtToken, installationID)
 	if err != nil {
 		fmt.Println("Error getting installation token:", err)
-	} else {
-		fmt.Println("Installation token:", installationToken)
+		http.Error(w, "failed to get installation token", 500)
+		return
 	}
 
 	go utils.TriggerDeploy(payload.Repository.CloneURL, payload.After, "MODEL-ID-PLACEHOLDER", installationToken)
