@@ -1,10 +1,23 @@
+"use client"
+
+import CardNav from "@/components/CardNav";
+import Particles from "@/components/Particles";
+import Squares from "@/components/Squares";
+
 
 export default function Home() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-      <h1>Welcome to Pickel!</h1>
-      </main>
-    </div>
+    <div className="h-screen w-full bg-black">
+    <Particles
+    particleColors={['rgba(188, 188, 188, 0)', 'rgba(181, 95, 95, 0)']}
+    particleCount={500}
+    particleSpread={6}
+    speed={0.1}
+    particleBaseSize={100}
+    moveParticlesOnHover={true}
+    alphaParticles={false}
+    disableRotation={false}
+  />
+  </div>
   );
 }
