@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"pickel-backend/middleware"
 	"pickel-backend/utils"
+	"strconv"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -198,6 +199,46 @@ func GetSingleModel(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(model)
+}
+
+func UpdateInstallationID(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	installationIDStr := vars["installation_id"]
+	modelID := vars["model_id"]
+
+	if installationIDStr == "" || modelID == "" {
+		http.Error(w, "installation_id and model_id required", http.StatusBadRequest)
+		return
+	}
+
+	installationID, err := strconv.Atoi(installationIDStr)
+	if err != nil {
+		http.Error(w, "Invalid installation_id", http.StatusBadRequest)
+		return
+	}
+
+	db := utils.GetDB()
+
+	tag, err := db.Exec(context.Background(),
+		"UPDATE models SET installation_id = $1 WHERE id = $2",
+		installationID, modelID,
+	)
+
+	if err != nil {
+		http.Error(w, "DB error: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if tag.RowsAffected() == 0 {
+		http.Error(w, "Model not found", http.StatusNotFound)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"message": "Installation ID updated",
+	})
 }
 
 // get public url

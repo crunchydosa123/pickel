@@ -10,13 +10,21 @@ type Props = {
 const ModelCode = ({ model }: Props) => {
   const INSTALL_URL = "https://github.com/apps/pickel-deploy-bot/installations/new";
 
+  const openInstallWindow = () => {
+    window.open(
+      INSTALL_URL,
+      "githubInstall",
+      "width=800,height=700,menubar=no,toolbar=no,location=no,status=no"
+    );
+  };
+
   return (
     <div className="w-full bg-gray-300 p-4 h-full flex items-center">
       {model.deployment_type === "0" && (
         <div className="flex w-full items-center justify-center">
           <Button
             className="gap-2 px-6 py-4 text-xl font-semibold"
-            onClick={() => window.location.href = INSTALL_URL}
+            onClick={openInstallWindow}
           >
             <Github className="w-6 h-6" />
             Connect GitHub
