@@ -175,19 +175,20 @@ func GetSingleModel(w http.ResponseWriter, r *http.Request) {
 	db := utils.GetDB()
 
 	type Model struct {
-		ID        string    `json:"id"`
-		Name      string    `json:"name"`
-		UserID    string    `json:"user_id"`
-		CreatedAt time.Time `json:"created_at"`
+		ID             string    `json:"id"`
+		Name           string    `json:"name"`
+		UserID         string    `json:"user_id"`
+		CreatedAt      time.Time `json:"created_at"`
+		DeploymentType string    `json:"deployment_type"`
 	}
 
 	var model Model
 
 	err := db.QueryRow(
 		context.Background(),
-		"SELECT id, name, created_by, created_at FROM models WHERE id = $1",
+		"SELECT id, name, created_by, created_at, deployment_type FROM models WHERE id = $1",
 		id,
-	).Scan(&model.ID, &model.Name, &model.UserID, &model.CreatedAt)
+	).Scan(&model.ID, &model.Name, &model.UserID, &model.CreatedAt, &model.DeploymentType)
 
 	if err != nil {
 		fmt.Println(err)
