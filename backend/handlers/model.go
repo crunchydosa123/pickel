@@ -242,6 +242,7 @@ func UpdateInstallationID(w http.ResponseWriter, r *http.Request) {
 }
 
 // get public url
+// TODO: modify
 func GetModelURL(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]string{"url": "https://example.com/model.pkl"})
 }
