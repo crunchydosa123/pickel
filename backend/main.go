@@ -9,7 +9,7 @@ import (
 func main() {
 	r := routes.SetupRoutes()
 
-	fmt.Println("✅ Server running on http://localhost:8080")
+	fmt.Println("Server running on http://localhost:8080")
 	err := http.ListenAndServe(":8080", routes.EnableCORS(r))
 	if err != nil {
 		fmt.Println("Server error:", err)
