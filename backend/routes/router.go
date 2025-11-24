@@ -34,7 +34,7 @@ func SetupRoutes() *mux.Router {
 	modelSubrouter.Use(middleware.JWTAuth)
 
 	modelSubrouter.HandleFunc("/create", handlers.CreateModel).Methods("POST")
-	//modelSubrouter.HandleFunc("/add", handlers.AddFileToModel).Methods("POST")
+	//modelSubrouter.HandleFunc("/add", handlers.AddFileToModel).Methods("POST") NOT REQUIRED - WE USE GITHUB NOW
 	modelSubrouter.HandleFunc("/deploy", handlers.DeployModel).Methods("POST")
 	modelSubrouter.HandleFunc("/url", handlers.GetModelURL).Methods("GET")
 	modelSubrouter.HandleFunc("/", handlers.GetModelByUser).Methods("GET")
