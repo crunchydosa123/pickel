@@ -30,7 +30,7 @@ func SetupRoutes() *mux.Router {
 	r.HandleFunc("/auth/signup", handlers.Signup).Methods("POST")
 	r.HandleFunc("/auth/login", handlers.Login).Methods("POST")
 
-	modelSubrouter := r.PathPrefix("/model").Subrouter()
+	modelSubrouter := r.PathPrefix("/model").Subrouter() //model add, deploy
 	modelSubrouter.Use(middleware.JWTAuth)
 
 	modelSubrouter.HandleFunc("/create", handlers.CreateModel).Methods("POST")
