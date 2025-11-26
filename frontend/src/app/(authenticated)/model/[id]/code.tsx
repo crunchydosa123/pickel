@@ -1,38 +1,50 @@
-"use client"
-
-import { Button } from "@/components/ui/button";
-import { Github } from "lucide-react";
+import RepoDropdown from './repo-dropdown';
 
 type Props = {
   model: any;
 };
 
-const ModelCode = ({ model }: Props) => {
-  const INSTALL_URL = "https://github.com/apps/pickel-deploy-bot/installations/new";
-
-  const openInstallWindow = () => {
-    window.open(
-      INSTALL_URL,
-      "githubInstall",
-      "width=800,height=700,menubar=no,toolbar=no,location=no,status=no"
-    );
-  };
-
-  return (
-    <div className="w-full bg-gray-300 p-4 h-full flex items-center">
-      {model.deployment_type === "0" && (
-        <div className="flex w-full items-center justify-center">
-          <Button
-            className="gap-2 px-6 py-4 text-xl font-semibold"
-            onClick={openInstallWindow}
-          >
-            <Github className="w-6 h-6" />
-            Connect GitHub
-          </Button>
-        </div>
-      )}
-    </div>
-  );
+type Repo = {
+  full_name: string;
 };
 
-export default ModelCode;
+export default async function ModelCodeServer({ model }: Props) {
+  // Server-side cookie access
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+  const { cookies } = await import('next/headers');
+  const cookieStore = await cookies();
+  const cookieHeader = cookieStore
+    .getAll()
+    .map((c) => `${c.name}=${c.value}`)
+    .join("; ");
+
+  // Fetch installed repos
+  let repos: Repo[] = [];
+
+  try {
+    const res = await fetch(`${baseUrl}/api/github/installed-repos`, {
+      method: "GET",
+      headers: { Cookie: cookieHeader },
+      cache: "no-store",
+    });
+
+    // Get raw text first for debugging
+    const text = await res.text();
+    try {
+      const data = JSON.parse(text);
+      repos = (data.repositories || []) as Repo[];
+      console.log("Fetched repos on server:", repos);
+    } catch (jsonErr) {
+      console.error("Failed to parse JSON:", jsonErr, "Response text:", text);
+    }
+  } catch (err) {
+    console.error("Fetch failed:", err);
+  }
+
+  return (
+    <div>
+      <h2>Model: {model.id}</h2>
+      <RepoDropdown model={model} repos={repos} />
+    </div>
+  );
+}

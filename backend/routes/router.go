@@ -30,11 +30,10 @@ func SetupRoutes() *mux.Router {
 	r.HandleFunc("/auth/signup", handlers.Signup).Methods("POST")
 	r.HandleFunc("/auth/login", handlers.Login).Methods("POST")
 
-	modelSubrouter := r.PathPrefix("/model").Subrouter() //model add, deploy
+	modelSubrouter := r.PathPrefix("/model").Subrouter()
 	modelSubrouter.Use(middleware.JWTAuth)
 
 	modelSubrouter.HandleFunc("/create", handlers.CreateModel).Methods("POST")
-	//modelSubrouter.HandleFunc("/add", handlers.AddFileToModel).Methods("POST") NOT REQUIRED - WE USE GITHUB NOW
 	modelSubrouter.HandleFunc("/deploy", handlers.DeployModel).Methods("POST")
 	modelSubrouter.HandleFunc("/url", handlers.GetModelURL).Methods("GET")
 	modelSubrouter.HandleFunc("/", handlers.GetModelByUser).Methods("GET")
@@ -42,6 +41,8 @@ func SetupRoutes() *mux.Router {
 
 	githubSubrouter := r.PathPrefix("/github").Subrouter()
 	githubSubrouter.HandleFunc("/webhook", handlers.GithubWebhook).Methods("POST")
+	githubSubrouter.HandleFunc("/callback", handlers.GithubCallback).Methods("POST")
+	githubSubrouter.HandleFunc("/fetch-repos", handlers.InstalledReposHandler).Methods("GET")
 
 	r.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

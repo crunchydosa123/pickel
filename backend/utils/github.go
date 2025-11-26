@@ -15,6 +15,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -278,4 +279,132 @@ func TriggerDeploy(repoURL, commitSHA, modelID string, installationToken string)
 
 	fmt.Println("Model deployed at:", apiURL)
 	return nil
+}
+
+func HandlePushEvent(body []byte) {
+	var payload struct {
+		Ref        string `json:"ref"`
+		After      string `json:"after"`
+		Repository struct {
+			CloneURL string `json:"clone_url"`
+		} `json:"repository"`
+		Installation struct {
+			ID int64 `json:"id"`
+		} `json:"installation"`
+	}
+
+	if err := json.Unmarshal(body, &payload); err != nil {
+		fmt.Println("Error unmarshaling push payload:", err)
+		return
+	}
+
+	if payload.Ref != "refs/heads/main" {
+		return
+	}
+
+	installationID := payload.Installation.ID
+
+	appIDStr := os.Getenv("GITHUB_APP_ID")
+	pemRaw := strings.ReplaceAll(os.Getenv("GITHUB_PRIVATE_KEY"), `\n`, "\n")
+	appID, _ := strconv.ParseInt(appIDStr, 10, 64)
+	jwtToken, _ := GenerateGithubJWT(appID, []byte(pemRaw))
+	installationToken, err := GetInstallationToken(jwtToken, installationID)
+	if err != nil {
+		fmt.Println("Error getting installation token:", err)
+		return
+	}
+	ConnectSupabase()
+	db := GetDB()
+
+	var modelID string
+	err = db.QueryRow(context.Background(), "SELECT model_id FROM installation_model_map WHERE installation_id = $1", installationID).Scan(&modelID)
+	if err != nil {
+		fmt.Println("Error fetching model_id for installation:", err)
+		return
+	}
+
+	go TriggerDeploy(payload.Repository.CloneURL, payload.After, modelID, installationToken)
+
+	fmt.Printf("Triggered deployment for model %s, repo %s\n", modelID, payload.Repository.CloneURL)
+}
+
+func HandleInstallationEvent(body []byte) {
+	var payload struct {
+		Action       string `json:"action"`
+		Installation struct {
+			ID      int64 `json:"id"`
+			Account struct {
+				Login   string `json:"login"`
+				ID      int64  `json:"id"`
+				HtmlURL string `json:"html_url"`
+			} `json:"account"`
+		} `json:"installation"`
+	}
+
+	if err := json.Unmarshal(body, &payload); err != nil {
+		fmt.Println("Error unmarshaling installation payload:", err)
+		return
+	}
+
+	if payload.Action != "created" && payload.Action != "added" {
+		return
+	}
+
+	installationID := payload.Installation.ID
+	ConnectSupabase()
+	db := GetDB()
+	var modelID string
+	err := db.QueryRow(context.Background(), "SELECT model_id FROM installation_model_map WHERE installation_id = $1", installationID).Scan(&modelID)
+	if err != nil {
+		fmt.Println("Error fetching model_id for installation:", err)
+		return
+	}
+
+	_, err = db.Exec(context.Background(),
+		`INSERT INTO installation_model_map (installation_id, model_id)
+		 VALUES ($1, $2)
+		 ON CONFLICT (installation_id) DO NOTHING`,
+		installationID, modelID,
+	)
+	if err != nil {
+		fmt.Println("DB error saving installation mapping:", err)
+		return
+	}
+
+	fmt.Printf("Saved installation mapping: %d -> %s\n", installationID, modelID)
+}
+
+type Repo struct {
+	FullName string `json:"full_name"`
+	HtmlURL  string `json:"html_url"`
+	Private  bool   `json:"private"`
+}
+
+// ReposResponse represents GitHub installation repos API response
+type ReposResponse struct {
+	Repositories []Repo `json:"repositories"`
+}
+
+// FetchInstallationRepos fetches repos for a given installation token
+func FetchInstallationRepos(token string) ([]Repo, error) {
+	req, _ := http.NewRequest(
+		"GET",
+		"https://api.github.com/installation/repositories",
+		nil,
+	)
+	req.Header.Set("Authorization", "token "+token)
+	req.Header.Set("Accept", "application/vnd.github+json")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var repoData ReposResponse
+	if err := json.NewDecoder(resp.Body).Decode(&repoData); err != nil {
+		return nil, err
+	}
+
+	return repoData.Repositories, nil
 }
