@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 // route.tsx
 export async function GET(req: NextRequest) {
   try {
-    const installationId = req.nextUrl.searchParams.get("installation_id"); // get it from the frontend
+    const installationId = req.nextUrl.searchParams.get("installation_id"); //TODO: get it from the frontend 
     const backendURL = process.env.BACKEND_URL;
 
     const res = await fetch(`${backendURL}/github/fetch-repos?installation_id=${installationId}`, {
