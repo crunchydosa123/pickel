@@ -9,7 +9,7 @@ type Repo = {
 };
 
 type Props = {
-  model: any;
+  model?: any;
   repos: Repo[];
 };
 

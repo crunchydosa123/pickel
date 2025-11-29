@@ -35,7 +35,7 @@ export async function Repos (props: Props) {
     console.error("Failed to fetch installed repos:", err);
   }
   return (
-   <RepoDropdown repos={repos} onLinkRepo={() => {}} />
+   <RepoDropdown repos={repos} />
   )
 }
 
