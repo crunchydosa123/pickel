@@ -28,7 +28,18 @@ func init() {
 		log.Fatal("S3_BUCKET_NAME is not set")
 	}
 
-	cfg, err := config.LoadDefaultConfig(context.TODO())
+	var cfg aws.Config
+	var err error
+
+	// Use AWS_PROFILE locally if set, otherwise fallback to env variables
+	profile := os.Getenv("AWS_PROFILE")
+	if profile != "" {
+		cfg, err = config.LoadDefaultConfig(context.TODO(),
+			config.WithSharedConfigProfile(profile))
+	} else {
+		cfg, err = config.LoadDefaultConfig(context.TODO())
+	}
+
 	if err != nil {
 		log.Fatalf("unable to load AWS SDK config: %v", err)
 	}
