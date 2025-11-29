@@ -3,14 +3,14 @@ import { Button } from "@/components/ui/button";
 import { cookies } from "next/headers";
 import ModelTabs from "./model-tabs";
 
-type PageProps = {
+type Props = {
   params: {
     id: string;
   };
 };
 
-const Page = async ({ params }: PageProps) => {
-  const { id } = await params;
+const Page = async ({ params }: Props) => {
+  const { id } = params;
 
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
 
