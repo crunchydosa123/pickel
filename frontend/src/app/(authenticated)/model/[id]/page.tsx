@@ -4,9 +4,7 @@ import { cookies } from "next/headers";
 import ModelTabs from "./model-tabs";
 
 type Props = {
-  params: {
-    id: string;
-  };
+  params: { id: string }; 
 };
 
 const Page = async ({ params }: Props) => {
