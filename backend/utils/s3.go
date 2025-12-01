@@ -34,8 +34,7 @@ func init() {
 	// Use AWS_PROFILE locally if set, otherwise fallback to env variables
 	profile := os.Getenv("AWS_PROFILE")
 	if profile != "" {
-		cfg, err = config.LoadDefaultConfig(context.TODO(),
-			config.WithSharedConfigProfile(profile))
+		cfg, err = config.LoadDefaultConfig(context.TODO())
 	} else {
 		cfg, err = config.LoadDefaultConfig(context.TODO())
 	}
